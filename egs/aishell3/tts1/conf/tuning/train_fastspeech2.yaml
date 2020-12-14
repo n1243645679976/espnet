@@ -1,0 +1,84 @@
+# This configuration is for ESPnet2 to train FastSpeech2.
+# It requires only a single GPU with 12 GB memory and it
+# takes ~4 days to finish the training on Titan V.
+
+# Compared to the original FastSpeech2 paper, we use token
+# averaged pitch and energy as the same as FastPitch.
+# And we do not use quantized pitch and energy.
+
+# For FastSpeech2, we need to extract pitch and energy.
+# Therefore, we assume that feats_type=raw in using this
+# configuration. Please be careful.
+
+##########################################################
+#                  TTS MODEL SETTING                     #
+##########################################################
+model-module: espnet.nets.pytorch_backend.e2e_tts_fastspeech2:FeedForwardTransformer
+adim: 384         # attention dimension
+aheads: 2         # number of attention heads
+elayers: 4        # number of encoder layers
+eunits: 1536      # number of encoder ff units
+dlayers: 4        # number of decoder layers
+dunits: 1536      # number of decoder ff units
+postnet-layers: 5                 # number of layers of postnset
+postnet-filts: 5                  # filter size of conv layers in postnet
+postnet-chans: 256                # number of channels of conv layers in postnet
+use-masking: True                 # whether to apply masking for padded part in loss calculation
+use-weighted-masking: False
+use-batch-norm: True
+use-scaled-pos-enc: True          # whether to use scaled positional encoding
+reduction-factor: 1               # reduction factor
+
+
+batch-sort-key: input
+batch-bins: 2200000       # batch bins (feats-type=raw)
+
+
+
+
+
+transformer-init: xavier_uniform         # initialization type
+transformer-warmup-steps: 400
+transformer-lr: 1.0            # learning rate
+initial-encoder-alpha: 1.0               # initial value of alpha of encoder scaled position encoding
+initial-decoder-alpha: 1.0               # initial value of alpha of decoder scaled position encoding
+postnet-dropout-rate: 0.5
+transformer-enc-dropout-rate: 0.2            # dropout rate for transformer encoder layer
+transformer-enc-positional-dropout-rate: 0.2 # dropout rate for transformer encoder positional encoding
+transformer-enc-attn-dropout-rate: 0.2       # dropout rate for transformer encoder attention layer
+transformer-dec-dropout-rate: 0.2            # dropout rate for transformer decoder layer
+transformer-dec-positional-dropout-rate: 0.2 # dropout rate for transformer decoder positional encoding
+transformer-dec-attn-dropout-rate: 0.2       # dropout rate for transformer decoder attention layer
+
+epochs: 1000           # number of epochs
+grad-clip: 1.0            # gradient clipping norm
+accum-grad: 8             # gradient accumulation
+opt: noam            # optimizer type
+patience: 0
+
+num-save-attention: 0
+
+
+
+
+
+positionwise-layer-type: conv1d   # type of position-wise layer
+positionwise-conv-kernel-size: 3  # kernel size of position wise conv layer
+duration-predictor-layers: 4      # number of layers of duration predictor
+duration-predictor-chans: 256     # number of channels of duration predictor
+duration-predictor-kernel-size: 3 # filter size of duration predictor
+pitch-predictor-layers: 5                  # number of conv layers in pitch predictor
+pitch-predictor-chans: 256                 # number of channels of conv layers in pitch predictor
+pitch-predictor-kernel-size: 5             # kernel size of conv leyers in pitch predictor
+pitch-predictor-dropout: 0.5               # dropout rate in pitch predictor
+pitch-embed-kernel-size: 1                 # kernel size of conv embedding layer for pitch
+pitch-embed-dropout: 0.0                   # dropout rate after conv embedding layer for pitch
+stop-gradient-from-pitch-predictor: true   # whether to stop the gradient from pitch predictor to encoder
+energy-predictor-layers: 2                 # number of conv layers in energy predictor
+energy-predictor-chans: 256                # number of channels of conv layers in energy predictor
+energy-predictor-kernel-size: 3            # kernel size of conv leyers in energy predictor
+energy-predictor-dropout: 0.5              # dropout rate in energy predictor
+energy-embed-kernel-size: 1                # kernel size of conv embedding layer for energy
+energy-embed-dropout: 0.0                  # dropout rate after conv embedding layer for energy
+stop-gradient-from-energy-predictor: false # whether to stop the gradient from energy predictor to encoder
+

@@ -47,6 +47,7 @@ import matplotlib
 from espnet.utils.training.tensorboard_logger import TensorboardLogger
 from tensorboardX import SummaryWriter
 
+from espnet2.tts.feats_extract.dio import Dio
 matplotlib.use("Agg")
 
 
@@ -221,17 +222,28 @@ class CustomConverter(object):
              'olens': tensor([8, 4])}
 
         """
+        durations = None
         # batch should be located in list
         assert len(batch) == 1
-        xs, ys, spembs, extras = batch[0]
+        if len(batch[0]) == 4:
+            xs, ys, spembs, extras = batch[0]
+        else:
+            xs, ys, spembs, extras, durations, f0, en = batch[0]
 
-        # get list of lengths (must be tensor for DataParallel)
-        ilens = torch.from_numpy(np.array([x.shape[0] for x in xs])).long().to(device)
-        olens = torch.from_numpy(np.array([y.shape[0] for y in ys])).long().to(device)
 
         # perform padding and conversion to tensor
         xs = pad_list([torch.from_numpy(x).long() for x in xs], 0).to(device)
         ys = pad_list([torch.from_numpy(y).float() for y in ys], 0).to(device)
+        if durations is not None:
+            durations = pad_list([torch.from_numpy(d).float() for d in durations], 0).to(device)
+            f0 = pad_list([torch.from_numpy(d).float() for d in f0], 0).to(device)
+            en = pad_list([torch.from_numpy(d).float() for d in en], 0).to(device)
+
+        # get list of lengths (must be tensor for DataParallel)
+        ilens = torch.from_numpy(np.array([x.shape[0] for x in xs])).long().to(device)
+        olens = torch.from_numpy(np.array([y.shape[0] for y in ys])).long().to(device)
+        if durations is not None:
+            dlens = torch.from_numpy(np.array([d.shape[0] for d in durations])).long().to(device)
 
         # make labels for stop prediction
         labels = ys.new_zeros(ys.size(0), ys.size(1))
@@ -239,13 +251,28 @@ class CustomConverter(object):
             labels[i, l - 1 :] = 1.0
 
         # prepare dict
-        new_batch = {
-            "xs": xs,
-            "ilens": ilens,
-            "ys": ys,
-            "labels": labels,
-            "olens": olens,
-        }
+        if durations is not None:
+            new_batch = {
+                "xs": xs,
+                "ilens": ilens,
+                "ys": ys,
+                "labels": labels,
+                "olens": olens,
+                'durations': durations,
+                'pitch': f0,
+                'energy': en,
+                'dlens': dlens
+            }
+
+        else:
+            new_batch = {
+                "xs": xs,
+                "ilens": ilens,
+                "ys": ys,
+                "labels": labels,
+                "olens": olens,
+            }
+
 
         # load speaker embedding
         if spembs is not None:

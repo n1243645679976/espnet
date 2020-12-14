@@ -113,13 +113,18 @@ class LoadInputsAndTargets(object):
             if self.load_input:
                 # Note(kamo): This for-loop is for multiple inputs
                 for idx, inp in enumerate(info["input"]):
-                    # {"input":
-                    #  [{"feat": "some/path.h5:F01_050C0101_PED_REAL",
-                    #    "filetype": "hdf5",
-                    #    "name": "input1", ...}], ...}
-                    x = self._get_from_loader(
-                        filepath=inp["feat"], filetype=inp.get("filetype", "mat")
-                    )
+                    if "duration" in inp:
+                        x = np.fromiter(
+                            map(float, inp["duration"].split()), dtype=np.float
+                        )
+                    else:
+                        # {"input":
+                        #  [{"feat": "some/path.h5:F01_050C0101_PED_REAL",
+                        #    "filetype": "hdf5",
+                        #    "name": "input1", ...}], ...}
+                        x = self._get_from_loader(
+                            filepath=inp["feat"], filetype=inp.get("filetype", "mat")
+                        )
                     x_feats_dict.setdefault(inp["name"], []).append(x)
             # FIXME(kamo): Dirty way to load only speaker_embedding
             elif self.mode == "tts" and self.use_speaker_embedding:
@@ -327,7 +332,7 @@ class LoadInputsAndTargets(object):
         xs = [xs[i] for i in nonzero_sorted_idx]
         uttid_list = [uttid_list[i] for i in nonzero_sorted_idx]
         # Added eos into input sequence
-        xs = [np.append(x, eos) for x in xs]
+#        xs = [np.append(x[1:], eos) for x in xs]
 
         if self.load_input:
             ys = list(x_feats_dict.values())[0]
@@ -348,13 +353,19 @@ class LoadInputsAndTargets(object):
                 spembs = list(x_feats_dict.values())[1]
                 spembs = [spembs[i] for i in nonzero_sorted_idx]
                 spembs_name = list(x_feats_dict.keys())[1]
+                
 
             x_name = list(y_feats_dict.keys())[0]
             y_name = list(x_feats_dict.keys())[0]
 
-            return_batch = OrderedDict(
-                [(x_name, xs), (y_name, ys), (spembs_name, spembs), (spcs_name, spcs)]
-            )
+            if len(x_feats_dict.values()) > 2 and list(x_feats_dict.keys())[2] == 'duration':
+                return_batch = OrderedDict(
+                    [(x_name, xs), (y_name, ys), (spembs_name, spembs), (spcs_name, spcs), ('duration', x_feats_dict['duration']), ('pitch', x_feats_dict['f0']), ('energy', x_feats_dict['en'])]
+                )
+            else:
+                return_batch = OrderedDict(
+                    [(x_name, xs), (y_name, ys), (spembs_name, spembs), (spcs_name, spcs)]
+                )
         elif self.use_speaker_embedding:
             if len(x_feats_dict) == 0:
                 raise IndexError("No speaker embedding is provided")
