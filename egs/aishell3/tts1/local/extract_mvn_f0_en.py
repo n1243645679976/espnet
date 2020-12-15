@@ -9,9 +9,9 @@ import threading
 import os
 import torch
 
-fs = 44100
-n_fft = 2048
-hop_length = 220
+fs = 24000
+n_fft = 1024
+hop_length = 128
 nj = 1
 
 def read_scp_return_dic(scp):
@@ -56,11 +56,6 @@ for dataset in [ 'train']:
             x =x.reshape(-1, 1).numpy()
             kaldi_io.write_mat(w2, x, key=key)
             w3.write('{} {}\n'.format(key, il))
-        with open('data/'+dataset+'/stats.f0', 'w+') as w, open('data/'+dataset+'/stats.en', 'w+') as w1:
-          f0 = torch.cat(f0mvn, dim=0)
-          en = torch.cat(enmvn, dim=0)
-          w.write('{} {}\n'.format(torch.mean(f0.mean()), torch.std(f0.std().pow(1/2))))
-          w1.write('{} {}\n'.format(torch.mean(en.mean()), torch.std(en.std().pow(1/2))))
     extract(list(wavscp.keys()), 0)
         
 #    threads = []

@@ -15,7 +15,7 @@ nj=64        # number of parallel jobs
 dumpdir=dump # directory to dump full features
 verbose=1    # verbose option (if set > 1, get more log)
 seed=1       # random seed number
-resume=exp/train_pytorch_train_fastspeech2/results/snapshot.ep.186    # the snapshot path to resume (if set empty, no effect)
+resume=""    # the snapshot path to resume (if set empty, no effect)
 
 # feature extraction related
 fs=24000      # sampling frequency
@@ -23,7 +23,7 @@ fmax=7600       # maximum frequency
 fmin=80       # minimum frequency
 n_mels=80     # number of mel basis
 n_fft=1024    # number of fft points
-n_shift=256   # number of shift points
+n_shift=128   # number of shift points
 win_length="" # window length
 
 # config file
@@ -215,11 +215,11 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
                                --num ${n_average}
     fi
     pids=() # initialize pids
-    for name in ${dev_set} ${eval_set}; do
+    for name in ${dev_set}; do
     (
         [ ! -e ${outdir}/${name} ] && mkdir -p ${outdir}/${name}
-        cp ${dumpdir}/${name}/data.json ${outdir}/${name}
-        splitjson.py --parts ${nj} ${outdir}/${name}/data.json
+        cp data/${name}/sub_dev_data.json ${outdir}/${name}/sub_dev_data.json
+        splitjson.py --parts ${nj} ${outdir}/${name}/sub_dev_data.json
         # decode in parallel
         ${train_cmd} JOB=1:${nj} ${outdir}/${name}/log/decode.JOB.log \
             tts_decode.py \
@@ -244,7 +244,7 @@ fi
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
     echo "stage 6: Synthesis"
     pids=() # initialize pids
-    for name in ${dev_set} ${eval_set}; do
+    for name in ${dev_set} ; do
     (
         [ ! -e ${outdir}_denorm/${name} ] && mkdir -p ${outdir}_denorm/${name}
         apply-cmvn --norm-vars=true --reverse=true data/${train_set}/cmvn.ark \

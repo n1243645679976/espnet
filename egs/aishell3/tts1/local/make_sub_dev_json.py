@@ -39,11 +39,12 @@ def read_scp_return_dic(scp):
                 shape[line.split()[0]] = len(line.split())-1
     return dic, shape
 
-for dataset in ['train', "dev"]:
+r = 0
+for dataset in ['dev']:
     # input
-    f0, f0_shape = read_scp_return_dic('data/'+dataset+'/feats.f0.cmvn.scp')
-    en, en_shape = read_scp_return_dic('data/'+dataset+'/feats.en.cmvn.scp')
-    fbank_dic, fbank_shape_dic = read_scp_return_dic('dump/'+dataset+'/feats.scp') # after cmvn
+    f0, f0_shape = read_scp_return_dic('data/'+dataset+'/feats.f0.0.scp')
+    en, en_shape = read_scp_return_dic('data/'+dataset+'/feats.en.0.scp')
+    fbank_dic, fbank_shape_dic = read_scp_return_dic('data/'+dataset+'/feats.scp')
     xvector_dic, xvector_shape_dic = read_scp_return_dic('exp/xvector_nnet_1a/xvectors_'+dataset+'/xvector.scp')
     duration, duration_shape = read_scp_return_dic('data/'+dataset+'/duration')
 
@@ -56,6 +57,9 @@ for dataset in ['train', "dev"]:
     # write info into json
     json_dic = {'utts':{}}
     for key in fbank_dic.keys():
+        r+= 1
+        if r>=100:
+            break
         input1_dic = {"feat": fbank_dic[key], "name": "input1", "shape": [int(fbank_shape_dic[key][0]), int(fbank_shape_dic[key][1])]}
         input2_dic = {'feat': xvector_dic[key], "name": "input2", "shape": [int(xvector_shape_dic[key][0])]}
         input3_dic = {'duration': duration[key], 'name': 'duration'}
@@ -67,6 +71,6 @@ for dataset in ['train', "dev"]:
         output_list = [output1_dic]
         json_dic['utts'][key] = {'input': input_list, 'output': output_list}
 
-    with open('data/'+dataset+'/data.json', 'w+') as w:
+    with open('data/'+dataset+'/sub_dev_data.json', 'w+') as w:
         json.dump(json_dic, w, indent=4, sort_keys=True, ensure_ascii=False)
 
